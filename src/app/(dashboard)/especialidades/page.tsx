@@ -1,19 +1,18 @@
-/**
- * @file src/app/(dashboard)/especialidades/page.tsx
- * @description Pagina de listado y gestion de Especialidades
- */
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database.types";
 
 export const metadata = { title: "Especialidades" };
 
+type Especialidad = Database["public"]["Tables"]["especialidades"]["Row"];
+
 export default async function EspecialidadesPage() {
   const supabase = await createServerSupabaseClient();
-
-  const { data: especialidades, error } = await supabase
+  const { data, error } = await supabase
     .from("especialidades")
     .select("*")
     .order("nombre", { ascending: true });
+
+  const especialidades = data as Especialidad[] | null;
 
   if (error) {
     return (
@@ -23,10 +22,8 @@ export default async function EspecialidadesPage() {
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
-      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Especialidades</h1>
@@ -38,8 +35,6 @@ export default async function EspecialidadesPage() {
           + Nueva Especialidad
         </button>
       </div>
-
-      {/* Tabla */}
       {especialidades?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No hay especialidades registradas</p>
