@@ -1,3 +1,12 @@
+/**
+ * @file src/app/api/hospitales/route.ts
+ * @description Route Handler para la API REST de Hospitales.
+ *
+ * Endpoints disponibles:
+ * GET  /api/hospitales - Listar todos los hospitales
+ * POST /api/hospitales - Crear un nuevo hospital
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { HospitalRepository } from "@/modules/hospitales/hospital.repository";
 import { HospitalService } from "@/modules/hospitales/hospital.service";
@@ -5,6 +14,10 @@ import { CreateHospitalSchema } from "@/modules/hospitales/hospital.schema";
 
 const service = new HospitalService(new HospitalRepository());
 
+/**
+ * GET /api/hospitales
+ * Retorna todos los hospitales en formato JSON.
+ */
 export async function GET(request: NextRequest) {
   try {
     // Leer parametros de query opcionales
@@ -21,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      data: result.data,
+      data:  result.data,
       total: result.data?.length || 0,
     });
   } catch (err) {
@@ -32,10 +45,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST /api/hospitales
+ * Crea un nuevo hospital. Valida el body con Zod.
+ *
+ * Body esperado (JSON):
+ * { "nombre": "...", "direccion": "...", "nit": "...", "telefono": "..." }
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // Validar con Zod
     const validation = CreateHospitalSchema.safeParse(body);
 
     if (!validation.success) {

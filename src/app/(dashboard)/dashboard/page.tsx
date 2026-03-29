@@ -15,38 +15,47 @@ async function getDashboardStats() {
     visitasRecientesResult,
   ] = await Promise.all([
     supabase.from("pacientes").select("*", { count: "exact", head: true }),
-    supabase.from("visitas").select("*", { count: "exact", head: true }).eq("fecha", hoy),
+    supabase
+      .from("visitas")
+      .select("*", { count: "exact", head: true })
+      .eq("fecha", hoy),
     supabase.from("medicos").select("*", { count: "exact", head: true }),
     supabase.from("hospitales").select("*", { count: "exact", head: true }),
     supabase
       .from("visitas")
-      .select(`
+      .select(
+        `
         visitaid, fecha, hora,
         pacientes!pacienteid(nombre, apellido),
         medicos!medicoid(nombre, apellido)
-      `)
+      `
+      )
       .order("fecha", { ascending: false })
       .order("hora", { ascending: false })
       .limit(10),
   ]);
 
   return {
-    totalPacientes:    pacientesResult.count    || 0,
-    visitasHoy:        visitasHoyResult.count   || 0,
-    totalMedicos:      medicosResult.count      || 0,
-    totalHospitales:   hospitalesResult.count   || 0,
-    visitasRecientes:  visitasRecientesResult.data || [],
+    totalPacientes: pacientesResult.count ?? 0,
+    visitasHoy: visitasHoyResult.count ?? 0,
+    totalMedicos: medicosResult.count ?? 0,
+    totalHospitales: hospitalesResult.count ?? 0,
+    visitasRecientes: visitasRecientesResult.data ?? [],
   };
 }
 
-function StatCard({ title, value, color }: {
+function StatCard({
+  title,
+  value,
+  color,
+}: {
   title: string;
   value: number;
   color: "green" | "blue" | "purple" | "orange";
 }) {
   const colors = {
-    green:  "text-green-600 bg-green-50 border-green-200",
-    blue:   "text-blue-600 bg-blue-50 border-blue-200",
+    green: "text-green-600 bg-green-50 border-green-200",
+    blue: "text-blue-600 bg-blue-50 border-blue-200",
     purple: "text-purple-600 bg-purple-50 border-purple-200",
     orange: "text-orange-600 bg-orange-50 border-orange-200",
   };
@@ -70,15 +79,34 @@ export default async function DashboardPage() {
         Sistema de Gestion Hospitalaria
       </h1>
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Pacientes"  value={stats.totalPacientes}   color="green"  />
-        <StatCard title="Visitas Hoy"      value={stats.visitasHoy}       color="blue"   />
-        <StatCard title="Medicos"          value={stats.totalMedicos}     color="purple" />
-        <StatCard title="Hospitales"       value={stats.totalHospitales}  color="orange" />
+        <StatCard
+          title="Total Pacientes"
+          value={stats.totalPacientes}
+          color="green"
+        />
+        <StatCard
+          title="Visitas Hoy"
+          value={stats.visitasHoy}
+          color="blue"
+        />
+        <StatCard
+          title="Medicos"
+          value={stats.totalMedicos}
+          color="purple"
+        />
+        <StatCard
+          title="Hospitales"
+          value={stats.totalHospitales}
+          color="orange"
+        />
       </div>
 
+      {/* Visitas en tiempo real */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RealtimeVisitasDashboard
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           initialVisitas={stats.visitasRecientes as any}
         />
       </div>

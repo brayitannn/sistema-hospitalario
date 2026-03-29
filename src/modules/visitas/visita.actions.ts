@@ -1,3 +1,4 @@
+// src/modules/visitas/visita.actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -5,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { VisitaRepository } from "@/modules/visitas/visita.repository";
 
+// Schema de validacion para la visita completa
 const CreateVisitaSchema = z.object({
   pacienteId: z.coerce.number().positive("Seleccione un paciente"),
   medicoId: z.coerce.number().positive("Seleccione un medico"),
@@ -52,25 +54,27 @@ export async function createVisitaAction(
     motivoId: d.motivoId,
     diagnostico: d.diagnostico,
     // Solo incluir signos vitales si se proporcionaron
-    signosVitales: d.frecuenciaCardiaca ? {
-      frecuenciaCardiaca: d.frecuenciaCardiaca,
-      presionArterial: d.presionArterial!,
-      frecuenciaRespiratoria: d.frecuenciaRespiratoria!,
-      temperatura: d.temperatura!,
-      saturacionOxigeno: d.saturacionOxigeno!,
-    } : undefined,
+    signosVitales: d.frecuenciaCardiaca
+      ? {
+          frecuenciaCardiaca: d.frecuenciaCardiaca,
+          presionArterial: d.presionArterial!,
+          frecuenciaRespiratoria: d.frecuenciaRespiratoria!,
+          temperatura: d.temperatura!,
+          saturacionOxigeno: d.saturacionOxigeno!,
+        }
+      : undefined,
   };
 
   try {
     await repo.createCompleta(visitaDTO);
-} catch (err){
+  } catch (err) {
     return {
-        success: false,
-        message: err instanceof Error ? err.message : "Error al crear la visita",
-        };
-    }
+      success: false,
+      message: err instanceof Error ? err.message : "Error al crear visita",
+    };
+  }
 
-    revalidatePath("/dashboard/visitas");
-    revalidatePath('/dashboard/pacientes/${d.pacienteId}');
-    redirect("/dashboard/visitas");
+  revalidatePath("/dashboard/visitas");
+  revalidatePath(`/dashboard/pacientes/${d.pacienteId}`);
+  redirect("/dashboard/visitas");
 }

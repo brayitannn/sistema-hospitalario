@@ -1,15 +1,31 @@
+/**
+ * @file src/lib/interfaces/repository.interface.ts
+ *
+ * @description Interfaces base del patron Repository.
+ *
+ * Usamos genericos de TypeScript (<T, ID, C>) para crear interfaces
+ * reutilizables que funcionan para CUALQUIER entidad del sistema.
+ *
+ * @principle ISP: Interfaces pequenas y especificas por capacidad
+ * @principle OCP: Cerradas para modificacion, abiertas para extension
+ * @principle DIP: Los servicios dependen de estas abstracciones
+ */
+
+/** Resultado estandar de todas las operaciones de servicio.
+ * Envuelve el resultado en un objeto uniforme con estado de exito/error.
+ * @template T - Tipo del dato retornado */
 export interface ServiceResult<T> {
-  data: T | null;
-  error: string | null;
-  success: boolean;
+  data: T | null;   // El dato si la operacion fue exitosa
+  error: string | null; // Mensaje de error si la operacion fallo
+  success: boolean; // true si tuvo exito, false si hubo error
 }
 
 export interface PageResult<T> {
-  data: T[];         
-  count: number;     
-  page: number;      
-  pageSize: number;  
-  totalPages: number;
+  data: T[];          // Arreglo de elementos de la pagina actual
+  count: number;      // Total de elementos (no solo de esta pagina)
+  page: number;       // Pagina actual (1-indexed)
+  pageSize: number;   // Tamano de la pagina
+  totalPages: number; // Total de paginas = ceil(count/pageSize)
 }
 
 export interface IReadableRepository<T, ID = number> {
@@ -25,7 +41,7 @@ export interface IWritableRepository<T, ID = number, C = Omit<T, "id">> {
 
 export interface IRepository<T, ID = number, C = Omit<T, "id">>
   extends IReadableRepository<T, ID>,
-    IWritableRepository<T, ID, C> {}
+          IWritableRepository<T, ID, C> {}
 
 export interface IPaginableRepository<T, F = Record<string, unknown>> {
   findPaginated(

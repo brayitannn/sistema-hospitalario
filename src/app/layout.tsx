@@ -10,7 +10,8 @@ export const metadata: Metadata = {
     template: "%s | Sistema Hospitalario",
     default: "Sistema de Gestion Hospitalaria — SENA CEET",
   },
-  description: "Sistema de gestion hospitalaria para el programa ADSO del SENA CEET",
+  description:
+    "Sistema de gestion hospitalaria para el programa ADSO del SENA CEET",
 };
 
 export default function RootLayout({

@@ -1,81 +1,232 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { VisitaCompleta } from "@/modules/visitas/types";
-import Link from "next/link";
-import { ClipboardList, Plus } from "lucide-react";
+"use client";
 
-export const metadata = { title: "Visitas" };
+import { useActionState } from "react";
 
-async function getVisitas(): Promise<VisitaCompleta[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from("visitas")
-    .select(`
-      visitaid, fecha, hora,
-      pacientes!pacienteid(nombre, apellido),
-      medicos!medicoid(nombre, apellido)
-    `)
-    .order("fecha", { ascending: false })
-    .order("hora", { ascending: false });
-  return data as unknown as VisitaCompleta[] || [];
+type FormState = {
+  success: boolean;
+  message: string;
+  errors?: Record<string, string[]>;
+} | null;
+
+async function placeholderAction(
+  _prev: FormState,
+  _data: FormData
+): Promise<FormState> {
+  // TODO: reemplazar con createVisitaAction cuando tus compañeros suban visita.actions.ts
+  return null;
 }
 
-export default async function VisitasPage() {
-  const visitas = await getVisitas();
+export default function NuevaVisitaPage() {
+  const [state, formAction, isPending] = useActionState(
+    placeholderAction,
+    null
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClipboardList size={24} className="text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Visitas</h1>
-        </div>
-        <Link
-          href="/dashboard/visitas/nueva"
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-        >
-          <Plus size={16} />
-          Nueva Visita
-        </Link>
-      </div>
+    <div className="max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Registrar Nueva Visita Medica
+      </h1>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Paciente</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Medico</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hora</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {visitas.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-                  No hay visitas registradas
-                </td>
-              </tr>
-            ) : (
-              visitas.map((v, index) => (
-                <tr key={v.visitaId || index} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {typeof v.paciente === "object"
-                      ? `${v.paciente?.apellido}, ${v.paciente?.nombre}`
-                      : "—"}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {typeof v.medico === "object"
-                      ? `Dr. ${v.medico?.nombre} ${v.medico?.apellido}`
-                      : "—"}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{v.fecha}</td>
-                  <td className="px-6 py-4 text-gray-600">{v.hora}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <form action={formAction} className="space-y-6">
+        {/* SECCION 1: Datos de la consulta */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-green-700 mb-4 pb-2 border-b border-gray-100">
+            Datos de la Consulta
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ID Paciente *
+              </label>
+              <input
+                name="pacienteid"
+                type="number"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+                placeholder="ID del paciente"
+              />
+              {state?.errors?.pacienteid && (
+                <p className="text-red-500 text-xs mt-1">
+                  {state.errors.pacienteid[0]}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ID Medico *
+              </label>
+              <input
+                name="medicoid"
+                type="number"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+                placeholder="ID del medico"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha de la visita *
+              </label>
+              <input
+                name="fecha"
+                type="date"
+                required
+                defaultValue={new Date().toISOString().split("T")[0]}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hora de la visita *
+              </label>
+              <input
+                name="hora"
+                type="time"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* SECCION 2: Diagnostico y Motivo */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-green-700 mb-4 pb-2 border-b border-gray-100">
+            Diagnostico y Motivo
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Motivo de consulta
+              </label>
+              <input
+                name="motivoid"
+                type="number"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Diagnostico
+              </label>
+              <textarea
+                name="diagnostico"
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+                placeholder="Describa el diagnostico del paciente..."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* SECCION 3: Signos Vitales */}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-green-700 mb-4 pb-2 border-b border-gray-100">
+            Signos Vitales
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Frec. Cardiaca (bpm)
+              </label>
+              <input
+                name="frecuenciaCardiaca"
+                type="number"
+                min="30"
+                max="300"
+                placeholder="72"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Presion Arterial
+              </label>
+              <input
+                name="presionArterial"
+                type="text"
+                placeholder="120/80"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Frec. Respiratoria (/min)
+              </label>
+              <input
+                name="frecuenciaRespiratoria"
+                type="number"
+                min="5"
+                max="60"
+                placeholder="16"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Temperatura (C)
+              </label>
+              <input
+                name="temperatura"
+                type="number"
+                min="32"
+                max="45"
+                step="0.1"
+                placeholder="36.5"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Saturacion O2 (%)
+              </label>
+              <input
+                name="saturacionOxigeno"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="98.0"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-500"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Mensaje de error general */}
+        {state && !state.success && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+            {state.message}
+          </div>
+        )}
+
+        {/* Botones */}
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => history.back()}
+            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="px-6 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            {isPending ? "Registrando..." : "Registrar Visita"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

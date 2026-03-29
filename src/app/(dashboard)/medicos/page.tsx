@@ -1,81 +1,96 @@
+/**
+ * @file src/app/(dashboard)/medicos/page.tsx
+ * @description Pagina de listado y gestion de Medicos
+ */
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { Medico } from "@/modules/medicos/types";
-import Link from "next/link";
-import { UserRound, Plus } from "lucide-react";
 
 export const metadata = { title: "Medicos" };
 
-async function getMedicos(): Promise<Medico[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from("medicos")
-    .select("*")
-    .order("apellido", { ascending: true });
-  
-  return (data || []).map((m) => ({
-    medicoId: m.medicoid,
-    nombre: m.nombre,
-    apellido: m.apellido,
-    especialidadId: m.especialidadid,
-    hospitalId: m.hospitalid,
-    telefono: m.telefono,
-    correoElectronico: m.correoelectronico,
-  }));
-}
-
 export default async function MedicosPage() {
-  const medicos = await getMedicos();
+  const supabase = await createServerSupabaseClient();
+
+  const { data: medicos, error } = await supabase
+    .from("medicos")
+    .select(`
+      medicoid,
+      nombre,
+      apellido,
+      telefono,
+      correoelectronico,
+      especialidades!especialidadid(nombre),
+      hospitales!hospitalid(nombre)
+    `)
+    .order("apellido", { ascending: true });
+
+  if (error) {
+    return (
+      <div className="rounded-lg bg-red-50 border border-red-200 p-6">
+        <h2 className="text-red-700 font-semibold">Error al cargar medicos</h2>
+        <p className="text-red-600 text-sm mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Cabecera */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <UserRound size={24} className="text-green-600" />
+        <div>
           <h1 className="text-2xl font-bold text-gray-900">Medicos</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {medicos?.length} {medicos?.length === 1 ? "medico" : "medicos"} registrados
+          </p>
         </div>
-        <Link
-          href="/dashboard/medicos/nuevo"
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-        >
-          <Plus size={16} />
-          Nuevo Medico
-        </Link>
+        <button className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          + Nuevo Medico
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Teléfono</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Correo</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Especialidad</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hospital</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {medicos.length === 0 ? (
+      {/* Tabla */}
+      {medicos?.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <p className="text-lg">No hay medicos registrados</p>
+          <p className="text-sm mt-1">Haz clic en "Nuevo Medico" para agregar uno.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
-                  No hay medicos registrados
-                </td>
+                <th className="text-left px-6 py-3 text-gray-600 font-semibold">Nombre</th>
+                <th className="text-left px-6 py-3 text-gray-600 font-semibold">Especialidad</th>
+                <th className="text-left px-6 py-3 text-gray-600 font-semibold">Hospital</th>
+                <th className="text-left px-6 py-3 text-gray-600 font-semibold">Telefono</th>
+                <th className="text-left px-6 py-3 text-gray-600 font-semibold">Correo</th>
+                <th className="text-right px-6 py-3 text-gray-600 font-semibold">Acciones</th>
               </tr>
-            ) : (
-              medicos.map((m) => (
-                <tr key={m.medicoId} className="hover:bg-gray-50 transition-colors">
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {medicos?.map((med) => (
+                <tr key={med.medicoid} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-gray-900">
-                    {m.apellido}, {m.nombre}
+                    Dr. {med.nombre} {med.apellido}
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{m.telefono}</td>
-                  <td className="px-6 py-4 text-gray-600">{m.correoElectronico}</td>
-                  <td className="px-6 py-4 text-gray-600">{m.especialidadId}</td>
-                  <td className="px-6 py-4 text-gray-600">{m.hospitalId}</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {(med.especialidades as any)?.nombre ?? "—"}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {(med.hospitales as any)?.nombre ?? "—"}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">{med.telefono}</td>
+                  <td className="px-6 py-4 text-gray-500">{med.correoelectronico}</td>
+                  <td className="px-6 py-4 text-right">
+                    <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

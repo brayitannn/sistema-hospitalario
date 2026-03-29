@@ -1,3 +1,9 @@
+/**
+ * @file src/modules/medicos/medico.repository.ts
+ * @description Repositorio para Medicos con relaciones.
+ * Implementa JOINs usando la sintaxis de Supabase PostgREST.
+ */
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
   MedicoConRelaciones,
@@ -16,6 +22,39 @@ const MEDICO_SELECT = `
   hospitales!hospitalid(hospitalid, nombre, direccion)
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RawMedicoRow = Record<string, any>;
+
+function mapRow(row: RawMedicoRow): MedicoConRelaciones {
+  const esp = Array.isArray(row.especialidades)
+    ? row.especialidades[0]
+    : row.especialidades;
+  const hosp = Array.isArray(row.hospitales)
+    ? row.hospitales[0]
+    : row.hospitales;
+
+  return {
+    medicoId:          row.medicoid,
+    nombre:            row.nombre,
+    apellido:          row.apellido,
+    especialidadId:    row.especialidadid,
+    hospitalId:        row.hospitalid,
+    telefono:          row.telefono,
+    correoElectronico: row.correoelectronico,
+    especialidad: {
+      especialidadId: esp?.especialidadid ?? 0,
+      nombre:         esp?.nombre ?? "",
+    },
+    hospital: {
+      hospitalId: hosp?.hospitalid ?? 0,
+      nombre:     hosp?.nombre ?? "",
+      direccion:  hosp?.direccion ?? "",
+      nit:        "",
+      telefono:   "",
+    },
+  };
+}
+
 export class MedicoRepository {
   async findAll(): Promise<MedicoConRelaciones[]> {
     const supabase = await createServerSupabaseClient();
@@ -27,26 +66,7 @@ export class MedicoRepository {
 
     if (error) throw new Error(`Error obteniendo medicos: ${error.message}`);
 
-    return (data || []).map((row) => ({
-      medicoId:           row.medicoid,
-      nombre:             row.nombre,
-      apellido:           row.apellido,
-      especialidadId:     row.especialidadid,
-      hospitalId:         row.hospitalid,
-      telefono:           row.telefono,
-      correoElectronico:  row.correoelectronico,
-      especialidad: {
-        especialidadId: row.especialidades.especialidadid,
-        nombre:         row.especialidades.nombre,
-      },
-      hospital: {
-        hospitalId: row.hospitales.hospitalid,
-        nombre:     row.hospitales.nombre,
-        direccion:  row.hospitales.direccion,
-        nit:        "",
-        telefono:   "",
-      },
-    }));
+    return (data || []).map((row) => mapRow(row as RawMedicoRow));
   }
 
   async findByEspecialidad(especialidadId: number): Promise<MedicoConRelaciones[]> {
@@ -60,7 +80,7 @@ export class MedicoRepository {
 
     if (error) throw new Error(error.message);
 
-    return (data || []).map((row) => this.mapRow(row));
+    return (data || []).map((row) => mapRow(row as RawMedicoRow));
   }
 
   async create(dto: CreateMedicoDTO): Promise<MedicoConRelaciones> {
@@ -69,11 +89,11 @@ export class MedicoRepository {
     const { data, error } = await supabase
       .from("medicos")
       .insert({
-        nombre:           dto.nombre,
-        apellido:         dto.apellido,
-        especialidadid:   dto.especialidadId,
-        hospitalid:       dto.hospitalId,
-        telefono:         dto.telefono,
+        nombre:            dto.nombre,
+        apellido:          dto.apellido,
+        especialidadid:    dto.especialidadId,
+        hospitalid:        dto.hospitalId,
+        telefono:          dto.telefono,
         correoelectronico: dto.correoElectronico,
       })
       .select(MEDICO_SELECT)
@@ -81,26 +101,15 @@ export class MedicoRepository {
 
     if (error) throw new Error(`Error creando medico: ${error.message}`);
 
-    return this.mapRow(data!);
+    return mapRow(data as RawMedicoRow);
   }
 
   async delete(id: number): Promise<boolean> {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase
-      .from("medicos").delete().eq("medicoid", id);
+      .from("medicos")
+      .delete()
+      .eq("medicoid", id);
     return !error;
-  }
-
-  private mapRow(row: Record<string, any>): MedicoConRelaciones {
-    return {
-      medicoId: row.medicoid, nombre: row.nombre, apellido: row.apellido,
-      especialidadId: row.especialidadid, hospitalId: row.hospitalid,
-      telefono: row.telefono, correoElectronico: row.correoelectronico,
-      especialidad: { especialidadId: row.especialidades.especialidadid,
-        nombre: row.especialidades.nombre },
-      hospital: { hospitalId: row.hospitales.hospitalid,
-        nombre: row.hospitales.nombre, direccion: row.hospitales.direccion,
-        nit: "", telefono: "" },
-    };
   }
 }

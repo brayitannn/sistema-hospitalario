@@ -1,75 +1,66 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { Hospital } from "@/modules/hospitales/types";
-import Link from "next/link";
-import { Building2, Plus } from "lucide-react";
+import { HospitalRepository } from "@/modules/hospitales/hospital.repository";
+import { HospitalService } from "@/modules/hospitales/hospital.service";
 
 export const metadata = { title: "Hospitales" };
 
-async function getHospitales(): Promise<Hospital[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from("hospitales")
-    .select("*")
-    .order("nombre", { ascending: true });
-
-  return (data || []).map((h) => ({
-    hospitalId: h.hospitalid,
-    nombre: h.nombre,
-    nit: h.nit,
-    direccion: h.direccion,
-    telefono: h.telefono,
-  }));
-}
+const hospitalService = new HospitalService(new HospitalRepository());
 
 export default async function HospitalesPage() {
-  const hospitales = await getHospitales();
+  const result = await hospitalService.getAll();
+
+  if (!result.success) {
+    return (
+      <div className="rounded-lg bg-red-50 border border-red-200 p-6">
+        <h2 className="text-red-700 font-semibold">Error al cargar hospitales</h2>
+        <p className="text-red-600 text-sm mt-1">{result.error}</p>
+      </div>
+    );
+  }
+
+  const hospitales = result.data ?? [];
 
   return (
     <div className="space-y-6">
+      {/* Cabecera */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Building2 size={24} className="text-green-600" />
+        <div>
           <h1 className="text-2xl font-bold text-gray-900">Hospitales</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {hospitales.length} hospital{hospitales.length !== 1 ? "es" : ""} registrados
+          </p>
         </div>
-        <Link
-          href="/dashboard/hospitales/nuevo"
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-        >
-          <Plus size={16} />
-          Nuevo Hospital
-        </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">NIT</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Dirección</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Teléfono</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {hospitales.length === 0 ? (
+      {/* Tabla o vacío */}
+      {hospitales.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <p className="text-lg">No hay hospitales registrados</p>
+          <p className="text-sm mt-1">Agrega el primero usando el botón de arriba.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-                  No hay hospitales registrados
-                </td>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">Nombre</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">NIT</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">Dirección</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">Teléfono</th>
               </tr>
-            ) : (
-              hospitales.map((h) => (
-                <tr key={h.hospitalId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">{h.nombre}</td>
-                  <td className="px-6 py-4 text-gray-600">{h.nit}</td>
-                  <td className="px-6 py-4 text-gray-600">{h.direccion}</td>
-                  <td className="px-6 py-4 text-gray-600">{h.telefono}</td>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {hospitales.map((hospital) => (
+                <tr key={hospital.hospitalId} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900">{hospital.nombre}</td>
+                  <td className="px-4 py-3 text-gray-600">{hospital.nit}</td>
+                  <td className="px-4 py-3 text-gray-600">{hospital.direccion}</td>
+                  <td className="px-4 py-3 text-gray-600">{hospital.telefono}</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
