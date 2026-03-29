@@ -15,21 +15,16 @@ async function getDashboardStats() {
     visitasRecientesResult,
   ] = await Promise.all([
     supabase.from("pacientes").select("*", { count: "exact", head: true }),
-    supabase
-      .from("visitas")
-      .select("*", { count: "exact", head: true })
-      .eq("fecha", hoy),
+    supabase.from("visitas").select("*", { count: "exact", head: true }).eq("fecha", hoy),
     supabase.from("medicos").select("*", { count: "exact", head: true }),
     supabase.from("hospitales").select("*", { count: "exact", head: true }),
     supabase
       .from("visitas")
-      .select(
-        `
+      .select(`
         visitaid, fecha, hora,
         pacientes!pacienteid(nombre, apellido),
         medicos!medicoid(nombre, apellido)
-      `
-      )
+      `)
       .order("fecha", { ascending: false })
       .order("hora", { ascending: false })
       .limit(10),
@@ -40,7 +35,7 @@ async function getDashboardStats() {
     visitasHoy: visitasHoyResult.count ?? 0,
     totalMedicos: medicosResult.count ?? 0,
     totalHospitales: hospitalesResult.count ?? 0,
-    visitasRecientes: visitasRecientesResult.data ?? [],
+    visitasRecientes: (visitasRecientesResult.data as any[]) ?? [],
   };
 }
 
@@ -63,9 +58,7 @@ function StatCard({
   return (
     <div className={`rounded-xl border p-6 ${colors[color]}`}>
       <p className="text-sm font-medium opacity-80">{title}</p>
-      <p className="text-3xl font-bold mt-2">
-        {value.toLocaleString("es-CO")}
-      </p>
+      <p className="text-3xl font-bold mt-2">{value.toLocaleString("es-CO")}</p>
     </div>
   );
 }
@@ -75,40 +68,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">
-        Sistema de Gestion Hospitalaria
-      </h1>
+      <h1 className="text-2xl font-bold text-gray-900">Sistema de Gestion Hospitalaria</h1>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Pacientes"
-          value={stats.totalPacientes}
-          color="green"
-        />
-        <StatCard
-          title="Visitas Hoy"
-          value={stats.visitasHoy}
-          color="blue"
-        />
-        <StatCard
-          title="Medicos"
-          value={stats.totalMedicos}
-          color="purple"
-        />
-        <StatCard
-          title="Hospitales"
-          value={stats.totalHospitales}
-          color="orange"
-        />
+        <StatCard title="Total Pacientes" value={stats.totalPacientes} color="green" />
+        <StatCard title="Visitas Hoy" value={stats.visitasHoy} color="blue" />
+        <StatCard title="Medicos" value={stats.totalMedicos} color="purple" />
+        <StatCard title="Hospitales" value={stats.totalHospitales} color="orange" />
       </div>
 
-      {/* Visitas en tiempo real */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RealtimeVisitasDashboard
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          initialVisitas={stats.visitasRecientes as any}
-        />
+        <RealtimeVisitasDashboard initialVisitas={stats.visitasRecientes} />
       </div>
     </div>
   );

@@ -1,8 +1,3 @@
-/**
- * @file src/app/(dashboard)/examenes/page.tsx
- * @description Pagina de listado y gestion de Examenes
- */
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Examenes" };
@@ -10,7 +5,7 @@ export const metadata = { title: "Examenes" };
 export default async function ExamenesPage() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: examenes, error } = await supabase
+  const { data, error } = await supabase
     .from("orden_examenes")
     .select(`
       ordenexamenid,
@@ -29,6 +24,8 @@ export default async function ExamenesPage() {
     `)
     .order("fecha", { ascending: false });
 
+  const examenes = data as any[] | null;
+
   if (error) {
     return (
       <div className="rounded-lg bg-red-50 border border-red-200 p-6">
@@ -40,7 +37,6 @@ export default async function ExamenesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Examenes</h1>
@@ -53,7 +49,6 @@ export default async function ExamenesPage() {
         </button>
       </div>
 
-      {/* Tabla */}
       {examenes?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No hay examenes registrados</p>
@@ -62,14 +57,13 @@ export default async function ExamenesPage() {
       ) : (
         <div className="space-y-4">
           {examenes?.map((orden) => {
-            const visita = orden.visitas as any;
+            const visita = orden.visitas;
             const detalles = orden.detallesexamenes as any[];
             return (
               <div
                 key={orden.ordenexamenid}
                 className="bg-white rounded-xl border border-gray-200 overflow-hidden"
               >
-                {/* Header de la orden */}
                 <div className="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-6 text-sm">
                     <span className="font-semibold text-gray-900">
@@ -88,7 +82,6 @@ export default async function ExamenesPage() {
                   </button>
                 </div>
 
-                {/* Detalles de examenes */}
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">

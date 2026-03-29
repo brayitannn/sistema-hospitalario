@@ -1,8 +1,3 @@
-/**
- * @file src/app/(dashboard)/tratamientos/page.tsx
- * @description Pagina de listado y gestion de Tratamientos
- */
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Tratamientos" };
@@ -10,7 +5,7 @@ export const metadata = { title: "Tratamientos" };
 export default async function TratamientosPage() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: tratamientos, error } = await supabase
+  const { data, error } = await supabase
     .from("tratamientos")
     .select(`
       tratamientoid,
@@ -24,6 +19,8 @@ export default async function TratamientosPage() {
     `)
     .order("fechainicio", { ascending: false });
 
+  const tratamientos = data as any[] | null;
+
   if (error) {
     return (
       <div className="rounded-lg bg-red-50 border border-red-200 p-6">
@@ -35,7 +32,6 @@ export default async function TratamientosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Tratamientos</h1>
@@ -48,7 +44,6 @@ export default async function TratamientosPage() {
         </button>
       </div>
 
-      {/* Tabla */}
       {tratamientos?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No hay tratamientos registrados</p>
@@ -70,23 +65,19 @@ export default async function TratamientosPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {tratamientos?.map((trat) => {
-                const visita = trat.visitas as any;
+                const visita = trat.visitas;
                 return (
                   <tr key={trat.tratamientoid} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-gray-500">{trat.tratamientoid}</td>
                     <td className="px-6 py-4 font-medium text-gray-900">
                       {visita?.pacientes?.nombre} {visita?.pacientes?.apellido}
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      Dr. {visita?.medicos?.nombre} {visita?.medicos?.apellido}
-                    </td>
+                    <td className="px-6 py-4 text-gray-600">Dr. {visita?.medicos?.nombre} {visita?.medicos?.apellido}</td>
                     <td className="px-6 py-4 text-gray-600">{visita?.fecha}</td>
                     <td className="px-6 py-4 text-gray-600">{trat.fechainicio}</td>
                     <td className="px-6 py-4 text-gray-600">{trat.fechafin ?? "En curso"}</td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
-                        Eliminar
-                      </button>
+                      <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">Eliminar</button>
                     </td>
                   </tr>
                 );

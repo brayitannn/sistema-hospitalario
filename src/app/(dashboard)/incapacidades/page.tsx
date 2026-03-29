@@ -1,8 +1,3 @@
-/**
- * @file src/app/(dashboard)/incapacidades/page.tsx
- * @description Pagina de listado y gestion de Incapacidades
- */
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Incapacidades" };
@@ -10,7 +5,7 @@ export const metadata = { title: "Incapacidades" };
 export default async function IncapacidadesPage() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: incapacidades, error } = await supabase
+  const { data, error } = await supabase
     .from("incapacidades")
     .select(`
       incapacidadid,
@@ -32,6 +27,8 @@ export default async function IncapacidadesPage() {
     `)
     .order("fecha", { ascending: false });
 
+  const incapacidades = data as any[] | null;
+
   if (error) {
     return (
       <div className="rounded-lg bg-red-50 border border-red-200 p-6">
@@ -43,7 +40,6 @@ export default async function IncapacidadesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Incapacidades</h1>
@@ -56,7 +52,6 @@ export default async function IncapacidadesPage() {
         </button>
       </div>
 
-      {/* Lista */}
       {incapacidades?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No hay incapacidades registradas</p>
@@ -65,34 +60,20 @@ export default async function IncapacidadesPage() {
       ) : (
         <div className="space-y-4">
           {incapacidades?.map((inc) => {
-            const tratamiento = inc.tratamientos as any;
+            const tratamiento = inc.tratamientos;
             const visita = tratamiento?.visitas;
             const detalles = inc.detallesincapacidades as any[];
             return (
-              <div
-                key={inc.incapacidadid}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden"
-              >
-                {/* Header de la incapacidad */}
+              <div key={inc.incapacidadid} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-6 text-sm">
-                    <span className="font-semibold text-gray-900">
-                      Incapacidad #{inc.incapacidadid}
-                    </span>
-                    <span className="text-gray-600">
-                      Paciente: {visita?.pacientes?.nombre} {visita?.pacientes?.apellido}
-                    </span>
-                    <span className="text-gray-600">
-                      Dr. {visita?.medicos?.nombre} {visita?.medicos?.apellido}
-                    </span>
+                    <span className="font-semibold text-gray-900">Incapacidad #{inc.incapacidadid}</span>
+                    <span className="text-gray-600">Paciente: {visita?.pacientes?.nombre} {visita?.pacientes?.apellido}</span>
+                    <span className="text-gray-600">Dr. {visita?.medicos?.nombre} {visita?.medicos?.apellido}</span>
                     <span className="text-gray-500">Fecha: {inc.fecha}</span>
                   </div>
-                  <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
-                    Eliminar
-                  </button>
+                  <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">Eliminar</button>
                 </div>
-
-                {/* Detalles de la incapacidad */}
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">

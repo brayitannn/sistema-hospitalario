@@ -1,8 +1,3 @@
-/**
- * @file src/app/(dashboard)/medicos/page.tsx
- * @description Pagina de listado y gestion de Medicos
- */
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Medicos" };
@@ -10,7 +5,7 @@ export const metadata = { title: "Medicos" };
 export default async function MedicosPage() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: medicos, error } = await supabase
+  const { data, error } = await supabase
     .from("medicos")
     .select(`
       medicoid,
@@ -23,6 +18,8 @@ export default async function MedicosPage() {
     `)
     .order("apellido", { ascending: true });
 
+  const medicos = data as any[] | null;
+
   if (error) {
     return (
       <div className="rounded-lg bg-red-50 border border-red-200 p-6">
@@ -34,7 +31,6 @@ export default async function MedicosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Medicos</h1>
@@ -47,7 +43,6 @@ export default async function MedicosPage() {
         </button>
       </div>
 
-      {/* Tabla */}
       {medicos?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No hay medicos registrados</p>
@@ -69,21 +64,13 @@ export default async function MedicosPage() {
             <tbody className="divide-y divide-gray-100">
               {medicos?.map((med) => (
                 <tr key={med.medicoid} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    Dr. {med.nombre} {med.apellido}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {(med.especialidades as any)?.nombre ?? "—"}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {(med.hospitales as any)?.nombre ?? "—"}
-                  </td>
+                  <td className="px-6 py-4 font-medium text-gray-900">Dr. {med.nombre} {med.apellido}</td>
+                  <td className="px-6 py-4 text-gray-600">{med.especialidades?.nombre ?? "—"}</td>
+                  <td className="px-6 py-4 text-gray-600">{med.hospitales?.nombre ?? "—"}</td>
                   <td className="px-6 py-4 text-gray-600">{med.telefono}</td>
                   <td className="px-6 py-4 text-gray-500">{med.correoelectronico}</td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
-                      Eliminar
-                    </button>
+                    <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">Eliminar</button>
                   </td>
                 </tr>
               ))}

@@ -1,8 +1,3 @@
-/**
- * @file src/app/(dashboard)/visitas/page.tsx
- * @description Pagina de listado y gestion de Visitas
- */
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
@@ -11,7 +6,7 @@ export const metadata = { title: "Visitas" };
 export default async function VisitasPage() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: visitas, error } = await supabase
+  const { data, error } = await supabase
     .from("visitas")
     .select(`
       visitaid,
@@ -22,6 +17,8 @@ export default async function VisitasPage() {
     `)
     .order("fecha", { ascending: false })
     .order("hora", { ascending: false });
+
+  const visitas = data as any[] | null;
 
   if (error) {
     return (
@@ -34,7 +31,6 @@ export default async function VisitasPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Visitas</h1>
@@ -50,7 +46,6 @@ export default async function VisitasPage() {
         </Link>
       </div>
 
-      {/* Tabla */}
       {visitas?.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No hay visitas registradas</p>
@@ -74,17 +69,13 @@ export default async function VisitasPage() {
                 <tr key={vis.visitaid} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-gray-500">{vis.visitaid}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">
-                    {(vis.pacientes as any)?.nombre} {(vis.pacientes as any)?.apellido}
+                    {vis.pacientes?.nombre} {vis.pacientes?.apellido}
                   </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    Dr. {(vis.medicos as any)?.nombre} {(vis.medicos as any)?.apellido}
-                  </td>
+                  <td className="px-6 py-4 text-gray-600">Dr. {vis.medicos?.nombre} {vis.medicos?.apellido}</td>
                   <td className="px-6 py-4 text-gray-600">{vis.fecha}</td>
                   <td className="px-6 py-4 text-gray-600">{vis.hora}</td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">
-                      Eliminar
-                    </button>
+                    <button className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors">Eliminar</button>
                   </td>
                 </tr>
               ))}
