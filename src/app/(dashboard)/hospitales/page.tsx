@@ -1,68 +1,75 @@
-"use client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { Hospital } from "@/modules/hospitales/types";
+import Link from "next/link";
+import { Building2, Plus } from "lucide-react";
 
-import { usePathname } from "next/navigation";
-import { User, Bell, Search, ChevronDown } from "lucide-react";
+export const metadata = { title: "Hospitales" };
 
-interface DashHeaderProps {
-  userEmail?: string | null;
+async function getHospitales(): Promise<Hospital[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("hospitales")
+    .select("*")
+    .order("nombre", { ascending: true });
+
+  return (data || []).map((h) => ({
+    hospitalId: h.hospitalid,
+    nombre: h.nombre,
+    nit: h.nit,
+    direccion: h.direccion,
+    telefono: h.telefono,
+  }));
 }
 
-export function DashHeader({ userEmail }: DashHeaderProps) {
-  const pathname = usePathname();
-
-  // Convertir el pathname en un titulo legible
-  // Ejemplo: /dashboard/hospitales -> Hospitales
-  const getPageTitle = () => {
-    if (pathname === "/dashboard") return "Panel Principal";
-    const segment = pathname.split("/").pop();
-    if (!segment) return "Dashboard";
-    return segment.charAt(0).toUpperCase() + segment.slice(1);
-  };
+export default async function HospitalesPage() {
+  const hospitales = await getHospitales();
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
-      {/* Lado izquierdo: Buscador y Titulo */}
-      <div className="flex items-center gap-8">
-        <h2 className="text-lg font-semibold text-gray-800 border-r pr-8 border-gray-100">
-          {getPageTitle()}
-        </h2>
-
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Buscar en el sistema..."
-            className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-green-500 transition-all"
-          />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Building2 size={24} className="text-green-600" />
+          <h1 className="text-2xl font-bold text-gray-900">Hospitales</h1>
         </div>
+        <Link
+          href="/dashboard/hospitales/nuevo"
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+        >
+          <Plus size={16} />
+          Nuevo Hospital
+        </Link>
       </div>
 
-      {/* Lado derecho: Notificaciones y Perfil */}
-      <div className="flex items-center gap-4">
-        <button className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors relative">
-          <Bell size={20} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
-
-        <div className="h-8 w-px bg-gray-100 mx-2"></div>
-
-        <button className="flex items-center gap-3 pl-2 pr-1 py-1 hover:bg-gray-50 rounded-lg transition-colors group">
-          <div className="flex flex-col items-end hidden sm:flex">
-            <span className="text-xs font-medium text-gray-700 leading-none">
-              Usuario Activo
-            </span>
-            <span className="text-[10px] text-gray-400 mt-1">
-              {userEmail || "usuario@sena.edu.co"}
-            </span>
-          </div>
-          
-          <div className="w-9 h-9 bg-green-100 text-green-700 rounded-full flex items-center justify-center border border-green-200">
-            <User size={20} />
-          </div>
-          
-          <ChevronDown size={14} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
-        </button>
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">NIT</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Dirección</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Teléfono</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {hospitales.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
+                  No hay hospitales registrados
+                </td>
+              </tr>
+            ) : (
+              hospitales.map((h) => (
+                <tr key={h.hospitalId} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">{h.nombre}</td>
+                  <td className="px-6 py-4 text-gray-600">{h.nit}</td>
+                  <td className="px-6 py-4 text-gray-600">{h.direccion}</td>
+                  <td className="px-6 py-4 text-gray-600">{h.telefono}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    </header>
+    </div>
   );
 }

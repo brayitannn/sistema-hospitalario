@@ -1,152 +1,80 @@
-"use client";
-
-import { useState } from "react";
-import { 
-  Search, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  MoreVertical, 
-  Building2, 
-  MapPin, 
-  Hash, 
-  Phone 
-} from "lucide-react";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { VisitaCompleta } from "@/modules/visitas/types";
 import Link from "next/link";
-import { deleteHospitalAction } from "@/modules/hospitales/hospital.actions";
-import { toast } from "react-hot-toast";
+import { ClipboardList, Plus } from "lucide-react";
 
-interface Hospital {
-  id: number;
-  nombre: string;
-  direccion: string;
-  nit: string;
-  telefono: string;
+export const metadata = { title: "Visitas" };
+
+async function getVisitas(): Promise<VisitaCompleta[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("visitas")
+    .select(`
+      visitaid, fecha, hora,
+      pacientes!pacienteid(nombre, apellido),
+      medicos!medicoid(nombre, apellido)
+    `)
+    .order("fecha", { ascending: false })
+    .order("hora", { ascending: false });
+  return data as unknown as VisitaCompleta[] || [];
 }
 
-interface HospitalListProps {
-  initialData: Hospital[];
-}
-
-export function HospitalList({ initialData }: HospitalListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const filteredHospitales = initialData.filter(
-    (h) =>
-      h.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      h.nit.includes(searchTerm)
-  );
-
-  const handleDelete = async (formData: FormData) => {
-    const confirmDelete = confirm("¿Estás seguro de eliminar este hospital?");
-    if (!confirmDelete) return;
-
-    const result = await deleteHospitalAction(null, formData);
-    
-    if (result.success) {
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
-    }
-  };
+export default async function VisitasPage() {
+  const visitas = await getVisitas();
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o NIT..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ClipboardList size={24} className="text-green-600" />
+          <h1 className="text-2xl font-bold text-gray-900">Visitas</h1>
         </div>
-
         <Link
-          href="/dashboard/hospitales/nuevo"
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto justify-center"
+          href="/dashboard/visitas/nueva"
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
         >
-          <Plus size={18} />
-          Nuevo Hospital
+          <Plus size={16} />
+          Nueva Visita
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hospital</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Identificación</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Contacto</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Paciente</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Medico</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hora</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {visitas.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
+                  No hay visitas registradas
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredHospitales.map((hospital) => (
-                <tr key={hospital.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center shrink-0">
-                        <Building2 size={20} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{hospital.nombre}</p>
-                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                          <MapPin size={12} />
-                          {hospital.direccion}
-                        </div>
-                      </div>
-                    </div>
+            ) : (
+              visitas.map((v, index) => (
+                <tr key={v.visitaId || index} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">
+                    {typeof v.paciente === "object"
+                      ? `${v.paciente?.apellido}, ${v.paciente?.nombre}`
+                      : "—"}
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <Hash size={14} className="text-gray-400" />
-                      <span>NIT: {hospital.nit}</span>
-                    </div>
+                  <td className="px-6 py-4 text-gray-600">
+                    {typeof v.medico === "object"
+                      ? `Dr. ${v.medico?.nombre} ${v.medico?.apellido}`
+                      : "—"}
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <Phone size={14} className="text-gray-400" />
-                      {hospital.telefono}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/dashboard/hospitales/editar/${hospital.id}`}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                      >
-                        <Pencil size={18} />
-                      </Link>
-                      
-                      <form action={handleDelete}>
-                        <input type="hidden" name="id" value={hospital.id} />
-                        <button
-                          type="submit"
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </form>
-                    </div>
-                  </td>
+                  <td className="px-6 py-4 text-gray-600">{v.fecha}</td>
+                  <td className="px-6 py-4 text-gray-600">{v.hora}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredHospitales.length === 0 && (
-          <div className="py-12 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-50 text-gray-300 rounded-full mb-4">
-              <Building2 size={32} />
-            </div>
-            <p className="text-gray-500 text-sm">No se encontraron hospitales que coincidan con tu búsqueda.</p>
-          </div>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
